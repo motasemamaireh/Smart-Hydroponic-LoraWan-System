@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Hydroponics Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --card: #111418;
+      --muted: #aab1b9;
+      --text: #e8eef5;
+      --accent: #72e1d1;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --ring: rgba(114,225,209,0.25);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px 20px;
+      background: radial-gradient(1200px 800px at 80% -10%, #1b2230 0%, #0b0d10 50%) no-repeat, var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .title { font-size: 22px; font-weight: 700; letter-spacing: .2px; }
+    .sub { color: var(--muted); font-size: 13px; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px; padding: 14px 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      backdrop-filter: blur(4px);
+    }
+    .tile { grid-column: span 3; min-height: 84px; display: flex; flex-direction: column; justify-content: center; }
+    .tile .label { color: var(--muted); font-size: 12px; }
+    .tile .value { font-size: 24px; font-weight: 700; margin-top: 6px; letter-spacing: .3px; }
+    .wide { grid-column: span 12; }
+    h2 { margin: 20px 0 12px; font-size: 18px; font-weight: 700; }
+    .signal p { margin: 6px 0; font-size: 14px; }
+    .hr { height: 1px; background: rgba(255,255,255,0.06); margin: 20px 0; border-radius: 1px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    button {
+      background: #161b22; color: var(--text);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+      padding: 8px 12px; font-weight: 600; cursor: pointer;
+      transition: all .15s ease; box-shadow: 0 0 0 0 var(--ring);
+    }
+    button:hover { border-color: rgba(255,255,255,0.18); transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    .btn-ok { border-color: rgba(34,197,94,.4); }
+    .btn-warn { border-color: rgba(245,158,11,.4); }
+    .btn-bad { border-color: rgba(239,68,68,.4); }
+    .pill {
+      display: inline-block; padding: 4px 8px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; letter-spacing: .3px;
+    }
+    .pill-on { background: rgba(239,68,68,.15); color: #ff9797; border: 1px solid rgba(239,68,68,.35); }
+    .pill-off { background: rgba(34,197,94,.15); color: #86f7a8; border: 1px solid rgba(34,197,94,.35); }
+    @media (max-width: 980px){ .tile { grid-column: span 6; } }
+    @media (max-width: 640px){ .tile { grid-column: span 12; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="title">Hydroponics Dashboard</div>
+      <div class="sub">Live data from The Things Stack · Node 1 + Node 2</div>
+    </div>
+  </header>
+
+  <!-- ===================== Node 1 ===================== -->
+  <h2>Node 1 — Environment</h2>
+  <section class="grid">
+    <div class="card tile"><div class="label">Soil</div><div class="value"><span id="soil">--</span> %</div></div>
+    <div class="card tile"><div class="label">Gas</div><div class="value"><span id="gas">--</span> %</div></div>
+    <div class="card tile"><div class="label">Temperature</div><div class="value"><span id="temperature">--</span> °C</div></div>
+    <div class="card tile"><div class="label">Pressure</div><div class="value"><span id="pressure">--</span> hPa</div></div>
+    <div class="card tile"><div class="label">Altitude</div><div class="value"><span id="altitude">--</span> m</div></div>
+    <div class="card tile"><div class="label">Lux</div><div class="value"><span id="lux">--</span> lx</div></div>
+
+   <div class="card wide">
+  <h3 style="margin:0 0 8px">Buzzer (Node 1)</h3>
+  <div class="row">
+    <button id="toggleBuzzerBtn" class="btn-warn">Toggle</button>
+    <div>Current: <span id="buzzerStatus" class="pill pill-off">--</span></div>
+  </div>
+</div>
+
+
+    <div class="card wide signal">
+      <h3 style="margin:0 0 8px">Signal (Node 1)</h3>
+      <p><b>RSSI:</b> <span id="rssi-value">--</span> dBm</p>
+      <p><b>SNR:</b> <span id="snr-value">--</span> dB</p>
+      <p><b>Data Rate:</b> <span id="dr-value">--</span></p>
+    </div>
+  </section>
+
+  <div class="hr"></div>
+
+  <!-- ===================== Node 2 ===================== -->
+  <h2>Node 2 — TDS</h2>
+  <section class="grid">
+    <div class="card tile"><div class="label">TDS</div><div class="value"><span id="tds">--</span> ppm</div></div>
+
+    <div class="card wide signal">
+      <h3 style="margin:0 0 8px">Signal (Node 2)</h3>
+      <p><b>RSSI:</b> <span id="rssi-value-2">--</span> dBm</p>
+      <p><b>SNR:</b> <span id="snr-value-2">--</span> dB</p>
+      <p><b>Data Rate:</b> <span id="dr-value-2">--</span></p>
+    </div>
+  </section>
+
+  <script src="/app.js"></script>
+</body>
+</html>
