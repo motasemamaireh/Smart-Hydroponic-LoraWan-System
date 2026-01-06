@@ -1,4 +1,4 @@
-# Smart Hydroponic LoRaWAN Monitoring System
+# Smart LoRaWAN Monitoring System
 
 ## Overview
 This repository contains the complete implementation of a LoRaWAN-based smart monitoring system developed as a GP2 project.
